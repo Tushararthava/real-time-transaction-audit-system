@@ -1,8 +1,6 @@
 'use strict';
 
 import { prisma } from '../config/database';
-import ApiError from '../utils/ApiError';
-import { logger } from '../config/logger';
 
 // Define Transaction type from Prisma query result
 type Transaction = Awaited<ReturnType<typeof prisma.transaction.findMany>>[number];
