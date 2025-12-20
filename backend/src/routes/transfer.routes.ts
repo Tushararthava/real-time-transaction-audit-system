@@ -8,22 +8,19 @@ import { transferSchema, transactionQuerySchema } from '../validators/transfer.v
 
 const router = Router();
 
-// All routes require authentication
-router.use(authenticate);
-
-// Transfer routes
-router.post('/transfer', validate(transferSchema), TransferController.createTransfer);
+// Transfer routes (all require authentication)
+router.post('/transfer', authenticate, validate(transferSchema), TransferController.createTransfer);
 
 // Transaction history
-router.get('/transactions', validate(transactionQuerySchema), TransferController.getTransactions);
+router.get('/transactions', authenticate, validate(transactionQuerySchema), TransferController.getTransactions);
 
 // Balance
-router.get('/balance', TransferController.getBalance);
+router.get('/balance', authenticate, TransferController.getBalance);
 
 // User search
-router.get('/users/search', TransferController.searchUsers);
+router.get('/users/search', authenticate, TransferController.searchUsers);
 
 // Recent payees
-router.get('/payees/recent', TransferController.getRecentPayees);
+router.get('/payees/recent', authenticate, TransferController.getRecentPayees);
 
 export default router;
