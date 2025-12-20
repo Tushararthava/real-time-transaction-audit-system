@@ -143,7 +143,8 @@ cd fontend
 npm run dev
 ```
 
-**Access the application:** http://localhost:5173
+**Live Demo:** [https://spectacular-respect-production.up.railway.app/](https://spectacular-respect-production.up.railway.app/)
+**Access the application locally:** http://localhost:5173
 
 **For complete setup instructions, troubleshooting, and manual installation steps, see [SETUP.md](./real-time-transaction-audit-system/SETUP.md)**
 
