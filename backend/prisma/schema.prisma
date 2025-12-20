@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USER & AUTHENTICATION
+// ============================================
+
+model User {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  name            String
+  password        String    // Hashed with bcrypt
+  avatar          String?
+  phoneNumber     String?
+  upiPin          String?   // Hashed UPI PIN (4-6 digits)
+  pinAttempts     Int       @default(0) // Track wrong PIN attempts
+  pinLockedUntil  DateTime? // Account lock timestamp
+  isVerified      Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  balance              Balance?
+  sentTransactions     Transaction[] @relation("SentTransactions")
+  receivedTransactions Transaction[] @relation("ReceivedTransactions")
+  ledgerEntries        LedgerEntry[]
+  auditLogs            AuditLog[]
+
+  @@map("users")
+}
+
+// ============================================
+// BALANCE & TRANSACTIONS
+// ============================================
+
+model Balance {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  amount    Int      @default(0) // Amount in cents
+  version   Int      @default(0) // For optimistic locking
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("balances")
+}
+
+model Transaction {
+  id             String            @id @default(uuid())
+  amount         Int               // Amount in cents
+  type           TransactionType   // DEBIT or CREDIT
+  status         TransactionStatus @default(PENDING)
+  senderId       String
+  receiverId     String
+  description    String?
+  idempotencyKey String?           @unique // For preventing duplicate transactions
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  // Relations
+  sender        User           @relation("SentTransactions", fields: [senderId], references: [id])
+  receiver      User           @relation("ReceivedTransactions", fields: [receiverId], references: [id])
+  ledgerEntries LedgerEntry[]
+
+  @@index([senderId, createdAt])
+  @@index([receiverId, createdAt])
+  @@index([idempotencyKey])
+  @@map("transactions")
+}
+
+// ============================================
+// DOUBLE-ENTRY LEDGER
+// ============================================
+
+model LedgerEntry {
+  id            String     @id @default(uuid())
+  transactionId String
+  userId        String
+  type          LedgerType // DEBIT or CREDIT
+  amount        Int        // Amount in cents
+  balanceBefore Int        // Balance before transaction
+  balanceAfter  Int        // Balance after transaction
+  createdAt     DateTime   @default(now())
+
+  // Relations
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+  user        User        @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([transactionId])
+  @@map("ledger_entries")
+}
+
+// ============================================
+// AUDIT LOG (Immutable, Hash-Chained)
+// ============================================
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  eventType String   // TRANSFER, LOGIN, SIGNUP, etc.
+  userId    String
+  metadata  Json     // Event-specific data
+  prevHash  String?  // Hash of previous audit entry (blockchain-style)
+  hash      String   @unique // SHA-256 hash of this entry
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([createdAt])
+  @@index([eventType])
+  @@map("audit_logs")
+}
+
+// ============================================
+// IDEMPOTENCY (Prevent Duplicate Requests)
+// ============================================
+
+model IdempotentRequest {
+  id             String   @id @default(uuid())
+  idempotencyKey String   @unique
+  requestHash    String   // Hash of request body
+  response       Json     // Cached response
+  createdAt      DateTime @default(now())
+  expiresAt      DateTime // Auto-delete after expiry
+
+  @@index([expiresAt])
+  @@index([idempotencyKey])
+  @@map("idempotent_requests")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum TransactionType {
+  DEBIT  // Money sent
+  CREDIT // Money received
+}
+
+enum TransactionStatus {
+  PENDING   // Transaction initiated
+  COMPLETED // Successfully processed
+  FAILED    // Transaction failed
+}
+
+enum LedgerType {
+  DEBIT  // Decrease in balance
+  CREDIT // Increase in balance
+}
