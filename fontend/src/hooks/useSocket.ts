@@ -3,7 +3,7 @@ import { io, Socket } from 'socket.io-client';
 import { useUserStore } from '@/store/user.store';
 import { queryClient } from '@/lib/queryClient';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3000';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
 export function useSocket() {
     const socketRef = useRef<Socket | null>(null);
