@@ -11,4 +11,4 @@ cmds = [
 ]
 
 [start]
-cmd = "npx prisma migrate deploy && node dist/server.js"
+cmd = "npm run start:prod"
