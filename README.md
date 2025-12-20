@@ -119,7 +119,7 @@ Ensure you have the following installed on your Windows machine:
 
 ### Quick Start
 
-For detailed setup instructions, please refer to **[SETUP.md](./real-time-transaction-audit-system/SETUP.md)**.
+For detailed setup instructions, please refer to **[SETUP.md](https://github.com/Tushararthava/real-time-transaction-audit-system/blob/main/SETUP.md)**.
 
 **TL;DR - Quick Setup:**
 
