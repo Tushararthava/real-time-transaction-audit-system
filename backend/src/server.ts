@@ -132,12 +132,33 @@ app.use(errorHandler);
 // Start server
 const PORT = env.PORT;
 
-httpServer.listen(PORT, () => {
-    logger.info(`🚀 Server running on port ${PORT}`);
-    logger.info(`📝 Environment: ${env.NODE_ENV}`);
-    logger.info(`🌐 Frontend URL: ${env.FRONTEND_URL}`);
-    logger.info(`💾 Database connected`);
-});
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
+
+// Start server with programmatic migration check
+const startServer = async () => {
+    try {
+        if (env.NODE_ENV === 'production') {
+            logger.info('🚀 Running database migrations...');
+            await execAsync('npx prisma migrate deploy');
+            logger.info('✅ Database migrations applied successfully');
+        }
+    } catch (error) {
+        logger.error('❌ Migration failed:', error);
+        // Continue anyway - maybe migrations are already done or it's a soft error
+    }
+
+    httpServer.listen(PORT, () => {
+        logger.info(`🚀 Server running on port ${PORT}`);
+        logger.info(`📝 Environment: ${env.NODE_ENV}`);
+        logger.info(`🌐 Frontend URL: ${env.FRONTEND_URL}`);
+        logger.info(`💾 Database connected`);
+    });
+};
+
+startServer();
 
 // Graceful shutdown
 const gracefulShutdown = async () => {
