@@ -18,6 +18,8 @@ import jwt from 'jsonwebtoken';
 
 const app: Application = express();
 
+// Trust proxy (Required for Railway/Heroku/Vercel)
+app.set('trust proxy', 1);
 
 const httpServer = createServer(app);
 
@@ -38,10 +40,10 @@ io.use(async (socket, next) => {
             return next(new Error('Authentication error: No token provided'));
         }
 
-        
+
         const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET) as { userId: string };
 
-        
+
         const user = await prisma.user.findUnique({
             where: { id: decoded.userId },
             select: { id: true, email: true },
