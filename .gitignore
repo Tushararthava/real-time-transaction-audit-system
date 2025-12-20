@@ -41,7 +41,7 @@ coverage/
 .nyc_output/
 
 # Prisma
-backend/prisma/migrations/**/migration.sql
+# backend/prisma/migrations/**/migration.sql
 
 # Temporary files
 *.tmp
