@@ -44,8 +44,15 @@ export function QrScanner({ onUserScanned }: QrScannerProps) {
                 return;
             }
 
-            // Use the first available camera (usually back camera on mobile, webcam on desktop)
-            const selectedDeviceId = videoInputDevices[0].deviceId;
+            // Try to find the back camera first
+            const backCamera = videoInputDevices.find(device =>
+                device.label.toLowerCase().includes('back') ||
+                device.label.toLowerCase().includes('environment')
+            );
+
+            // Use back camera if found, otherwise use the last available camera (often back camera on mobile)
+            // or fallback to the first one
+            const selectedDeviceId = backCamera ? backCamera.deviceId : (videoInputDevices.length > 1 ? videoInputDevices[videoInputDevices.length - 1].deviceId : videoInputDevices[0].deviceId);
 
             if (videoRef.current) {
                 await codeReaderRef.current.decodeFromVideoDevice(
