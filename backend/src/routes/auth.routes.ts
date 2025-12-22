@@ -14,7 +14,7 @@ router.post('/signup', authLimiter, validate(signupSchema), AuthController.signu
 router.post('/login', loginLimiter, validate(loginSchema), AuthController.login);
 router.post('/refresh', validate(refreshTokenSchema), AuthController.refresh);
 
-// Protected routes (require authentication)
+// Protected routes 
 router.get('/me', authenticate, AuthController.getMe);
 router.post('/logout', authenticate, AuthController.logout);
 

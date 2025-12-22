@@ -6,8 +6,7 @@ import ApiError from '../utils/ApiError';
 import { env } from '../config/env';
 
 
-//Global error handling middleware
-// MUST be registered last in middleware chain
+
 
 export const errorHandler = (
     err: Error | ApiError,

@@ -8,7 +8,7 @@ import ApiError from '../utils/ApiError';
 import { logger } from '../config/logger';
 import { AuthService } from './auth.service';
 
-// Event emitter for transfer events
+
 export const transferEvents = new EventEmitter();
 
 interface TransferData {
@@ -17,26 +17,19 @@ interface TransferData {
     amount: number;
     description?: string;
     idempotencyKey?: string;
-    upiPin: string; // Required for verification
+    upiPin: string; 
 }
 
 export class TransferService {
-    /**
-     * Create P2P transfer with all production features:
-     * - Pessimistic locking (concurrency control)
-     * - Idempotency key handling
-     * - Double-entry ledger
-     * - Event-driven audit logging
-     * - Strict validation
-     */
+
     static async createTransfer(data: TransferData) {
         const { senderId, receiverId, amount, description, idempotencyKey, upiPin } = data;
 
-        // 1️⃣ VERIFY UPI PIN (CRITICAL SECURITY CHECK)
+        
         await AuthService.verifyUpiPin(senderId, upiPin);
         logger.info(`UPI PIN verified for transfer from user: ${senderId}`);
 
-        // 3️⃣ IDEMPOTENCY CHECK
+        
         if (idempotencyKey) {
             const cached = await prisma.idempotentRequest.findUnique({
                 where: { idempotencyKey },
@@ -48,13 +41,12 @@ export class TransferService {
             }
         }
 
-        // 4️⃣ STRICT VALIDATION
         this.validateTransfer({ senderId, receiverId, amount });
 
-        // 2️⃣ CONCURRENCY CONTROL + 5️⃣ DOUBLE-ENTRY LEDGER
+        
         const result = await prisma.$transaction(
             async (tx: Prisma.TransactionClient) => {
-                // LOCK sender's balance (SELECT ... FOR UPDATE)
+                
                 const senderBalance = await tx.balance.findUnique({
                     where: { userId: senderId },
                 });
@@ -110,8 +102,7 @@ export class TransferService {
                     data: { amount: { increment: amount } },
                 });
 
-                // 5️⃣ DOUBLE-ENTRY LEDGER
-                // Create DEBIT entry for sender
+                
                 await tx.ledgerEntry.create({
                     data: {
                         transactionId: transaction.id,
@@ -146,7 +137,7 @@ export class TransferService {
             }
         );
 
-        // Store idempotent request if key provided
+        
         if (idempotencyKey) {
             const requestHash = crypto
                 .createHash('sha256')
@@ -163,7 +154,7 @@ export class TransferService {
             });
         }
 
-        // 6️⃣ EVENT-DRIVEN AUDIT (non-blocking)
+        
         transferEvents.emit('TRANSFER_COMPLETED', {
             transactionId: result.transaction.id,
             senderId,
@@ -262,7 +253,7 @@ export class TransferService {
      * Get recent payees - users the current user has recently transacted with
      */
     static async getRecentPayees(userId: string, limit: number = 5) {
-        // Get recent transactions where user was sender or receiver
+        
         const transactions = await prisma.transaction.findMany({
             where: {
                 OR: [
@@ -280,7 +271,7 @@ export class TransferService {
                 }
             },
             orderBy: { createdAt: 'desc' },
-            take: 100 // Get last 100 to group and aggregate
+            take: 100 
         });
 
         // Group by user and calculate stats
@@ -311,7 +302,7 @@ export class TransferService {
      * Validate transfer data
      */
     private static validateTransfer(data: { senderId: string; receiverId: string; amount: number }) {
-        // 4️⃣ STRICT VALIDATION
+        
         if (data.amount <= 0) {
             throw ApiError.badRequest('Amount must be greater than 0');
         }

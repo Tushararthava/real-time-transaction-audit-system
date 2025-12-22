@@ -33,7 +33,7 @@ export class TransferController {
             amount,
             description,
             idempotencyKey,
-            upiPin, // Add UPI PIN to service call
+            upiPin,
         });
 
         res.status(201).json(
@@ -90,7 +90,7 @@ export class TransferController {
         const users = await prisma.user.findMany({
             where: {
                 AND: [
-                    { id: { not: currentUserId } }, // Exclude current user
+                    { id: { not: currentUserId } }, 
                     {
                         OR: [
                             { name: { contains: q, mode: 'insensitive' } },

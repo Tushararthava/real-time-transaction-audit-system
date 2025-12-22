@@ -7,7 +7,7 @@ import ApiError from '../utils/ApiError';
 import { asyncHandler } from '../utils/asyncHandler';
 import { prisma } from '../config/database';
 
-// Extend Express Request type
+
 declare global {
     namespace Express {
         interface Request {
@@ -27,27 +27,27 @@ interface JwtPayload {
 }
 
 
-//Verify JWT access token and attach user to request
+
 
 export const authenticate = asyncHandler(async (req: Request, _res: Response, next: NextFunction) => {
-    // Get token from Authorization header
+    
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         throw ApiError.unauthorized('No token provided');
     }
 
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    const token = authHeader.substring(7); 
 
     try {
-        // Verify token
+        
         const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET) as JwtPayload;
 
         if (decoded.type !== 'access') {
             throw ApiError.unauthorized('Invalid token type');
         }
 
-        // Get user from database
+        
         const user = await prisma.user.findUnique({
             where: { id: decoded.userId },
             select: { id: true, email: true, name: true },
@@ -57,7 +57,7 @@ export const authenticate = asyncHandler(async (req: Request, _res: Response, ne
             throw ApiError.unauthorized('User not found');
         }
 
-        // Attach user to request
+        
         req.user = user;
         next();
     } catch (error) {

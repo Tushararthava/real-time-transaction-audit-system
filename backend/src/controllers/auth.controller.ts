@@ -60,8 +60,7 @@ export class AuthController {
      * Logout user (client-side token removal)
      */
     static logout = asyncHandler(async (_req: Request, res: Response) => {
-        // In a stateless JWT system, logout is handled client-side
-        // Here we just acknowledge the request
+        
         res.status(200).json(
             new ApiResponse(200, 'Logged out successfully')
         );

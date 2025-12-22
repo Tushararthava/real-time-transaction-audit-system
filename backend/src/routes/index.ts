@@ -14,7 +14,7 @@ router.get('/health', (_req, res) => {
 
 // Mount routes
 router.use('/auth', authRoutes);
-router.use('/', transferRoutes); // Mounted at root for /transfer, /transactions, /balance endpoints
+router.use('/', transferRoutes); 
 router.use('/stats', statsRoutes);
 
 export default router;
