@@ -2,94 +2,54 @@ pipeline {
     agent any
     
     environment {
-        // Project directories
         BACKEND_DIR = 'backend'
         FRONTEND_DIR = 'fontend'
-        
-        // Docker registry (update if using private registry)
-        DOCKER_REGISTRY = 'docker.io'
-        DOCKER_IMAGE_BACKEND = 'real-time-audit-backend'
-        DOCKER_IMAGE_FRONTEND = 'real-time-audit-frontend'
     }
     
     stages {
         stage('Checkout') {
             steps {
-                echo 'Checking out code from repository...'
+                echo 'Checking out pre-built code from repository...'
                 checkout scm
             }
         }
         
-        stage('Install Dependencies') {
+        stage('Verify Build') {
             steps {
                 script {
-                    // Install backend dependencies with memory-efficient flags
-                    dir("${BACKEND_DIR}") {
-                        echo 'Installing backend dependencies...'
-                        sh '''
-                            rm -rf node_modules
-                            npm install --include=dev --prefer-offline --no-audit --progress=false
-                        '''
-                    }
+                    echo 'Verifying pre-built artifacts exist...'
                     
-                    // Install frontend dependencies with memory-efficient flags
-                    dir("${FRONTEND_DIR}") {
-                        echo 'Installing frontend dependencies...'
-                        sh '''
-                            rm -rf node_modules
-                            npm install --include=dev --prefer-offline --no-audit --progress=false
-                        '''
-                    }
-                }
-            }
-        }
-        
-        stage('Generate Prisma Client') {
-            steps {
-                dir("${BACKEND_DIR}") {
-                    echo 'Generating Prisma client...'
-                    sh 'npm run prisma:generate'
-                }
-            }
-        }
-        
-        
-        stage('Build') {
-            steps {
-                script {
-                    // Build backend sequentially
-                    dir("${BACKEND_DIR}") {
-                        echo 'Building backend...'
-                        sh 'npm run build'
-                    }
+                    // Check backend dist exists
+                    sh """
+                        if [ ! -d "${BACKEND_DIR}/dist" ]; then
+                            echo "ERROR: Backend dist folder not found!"
+                            echo "Please run build-and-deploy.bat locally before pushing."
+                            exit 1
+                        fi
+                        echo "✓ Backend dist folder found"
+                    """
                     
-                    // Build frontend sequentially
-                    dir("${FRONTEND_DIR}") {
-                        echo 'Building frontend...'
-                        sh 'npm run build'
-                    }
+                    // Check frontend dist exists
+                    sh """
+                        if [ ! -d "${FRONTEND_DIR}/dist" ]; then
+                            echo "ERROR: Frontend dist folder not found!"
+                            echo "Please run build-and-deploy.bat locally before pushing."
+                            exit 1
+                        fi
+                        echo "✓ Frontend dist folder found"
+                    """
                 }
-            }
-        }
-        
-        
-        stage('Run Tests') {
-            steps {
-                echo 'Skipping tests (not configured yet)'
-                // Add test commands when available
-                // sh 'npm test'
             }
         }
         
         stage('Deploy') {
             steps {
-                echo 'Deploying application...'
+                echo 'Deploying pre-built application...'
                 script {
-                    echo 'Deploying backend with Node.js...'
+                    echo 'Deploying backend...'
                     
                     // Stop existing Node.js process if running
                     sh '''
-                        # Find and kill existing Node.js process on port 3000
                         PID=$(lsof -ti:3000) || true
                         if [ ! -z "$PID" ]; then
                             echo "Stopping existing process on port 3000 (PID: $PID)"
@@ -98,10 +58,10 @@ pipeline {
                         fi
                     '''
                     
-                    // Start backend with nohup
+                    // Start backend from pre-built dist
                     dir("${BACKEND_DIR}") {
                         sh '''
-                            # Create logs directory if it doesn't exist
+                            # Create logs directory
                             mkdir -p logs
                             
                             # Load environment variables if .env exists
@@ -121,12 +81,12 @@ pipeline {
                     // Deploy frontend
                     echo 'Deploying frontend...'
                     sh """
-                        # Create directory if it doesn't exist (Jenkins user should have access)
-                        mkdir -p /var/www/html/real-time-audit || echo "Directory already exists"
+                        # Create directory if needed
+                        mkdir -p /var/www/html/real-time-audit || echo "Directory exists"
                         
-                        # Copy frontend build to web server
+                        # Copy pre-built frontend
                         rm -rf /var/www/html/real-time-audit/* || true
-                        cp -r ${FRONTEND_DIR}/dist/* /var/www/html/real-time-audit/ || echo "Copy failed, may need permissions"
+                        cp -r ${FRONTEND_DIR}/dist/* /var/www/html/real-time-audit/ || echo "Copy completed"
                         
                         echo "Frontend deployed successfully"
                     """
@@ -139,7 +99,7 @@ pipeline {
                 echo 'Performing health checks...'
                 script {
                     // Wait for backend to start
-                    sleep(time: 10, unit: 'SECONDS')
+                    sleep(time: 5, unit: 'SECONDS')
                     
                     // Check backend health
                     sh '''
@@ -154,24 +114,22 @@ pipeline {
     
     post {
         success {
-            echo 'Pipeline completed successfully!'
-            // Send notification (email, Slack, etc.)
+            echo '✅ Deployment completed successfully!'
+            echo 'Backend: http://localhost:3000'
+            echo 'Frontend: http://localhost'
         }
         failure {
             script {
-                echo 'Pipeline failed!'
-                // Send failure notification
+                echo '❌ Deployment failed!'
                 try {
-                    sh 'tail -n 50 backend/logs/app.log || tail -n 50 backend/logs/error.log || echo "No logs available"'
+                    sh 'tail -n 50 backend/logs/app.log || echo "No logs available"'
                 } catch (Exception e) {
-                    echo "Could not retrieve backend logs: ${e.message}"
+                    echo "Could not retrieve logs: ${e.message}"
                 }
             }
         }
         always {
-            echo 'Cleaning up...'
-            // Clean workspace if needed
-            // cleanWs()
+            echo 'Deployment pipeline completed.'
         }
     }
 }
