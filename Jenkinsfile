@@ -27,6 +27,7 @@ pipeline {
                     dir("${BACKEND_DIR}") {
                         echo 'Installing backend dependencies...'
                         sh '''
+                            rm -rf node_modules
                             npm install --include=dev --prefer-offline --no-audit --progress=false
                         '''
                     }
@@ -35,6 +36,7 @@ pipeline {
                     dir("${FRONTEND_DIR}") {
                         echo 'Installing frontend dependencies...'
                         sh '''
+                            rm -rf node_modules
                             npm install --include=dev --prefer-offline --no-audit --progress=false
                         '''
                     }
