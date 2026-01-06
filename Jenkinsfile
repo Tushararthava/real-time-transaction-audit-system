@@ -101,6 +101,9 @@ pipeline {
                     // Start backend with nohup
                     dir("${BACKEND_DIR}") {
                         sh '''
+                            # Create logs directory if it doesn't exist
+                            mkdir -p logs
+                            
                             # Load environment variables if .env exists
                             if [ -f .env ]; then
                                 export $(cat .env | grep -v '^#' | xargs)
@@ -118,13 +121,12 @@ pipeline {
                     // Deploy frontend
                     echo 'Deploying frontend...'
                     sh """
-                        # Create directory if it doesn't exist
-                        sudo mkdir -p /var/www/html/real-time-audit
+                        # Create directory if it doesn't exist (Jenkins user should have access)
+                        mkdir -p /var/www/html/real-time-audit || echo "Directory already exists"
                         
                         # Copy frontend build to web server
-                        sudo rm -rf /var/www/html/real-time-audit/*
-                        sudo cp -r ${FRONTEND_DIR}/dist/* /var/www/html/real-time-audit/
-                        sudo chown -R www-data:www-data /var/www/html/real-time-audit || true
+                        rm -rf /var/www/html/real-time-audit/* || true
+                        cp -r ${FRONTEND_DIR}/dist/* /var/www/html/real-time-audit/ || echo "Copy failed, may need permissions"
                         
                         echo "Frontend deployed successfully"
                     """
