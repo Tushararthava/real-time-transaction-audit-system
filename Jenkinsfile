@@ -42,6 +42,21 @@ pipeline {
             }
         }
         
+        stage('Install Production Dependencies') {
+            steps {
+                script {
+                    echo 'Installing production dependencies only...'
+                    
+                    // Install backend production dependencies
+                    dir("${BACKEND_DIR}") {
+                        sh 'npm install --production --prefer-offline --no-audit --progress=false'
+                    }
+                    
+                    echo '✓ Production dependencies installed'
+                }
+            }
+        }
+        
         stage('Deploy') {
             steps {
                 echo 'Deploying pre-built application...'
