@@ -21,21 +21,22 @@ pipeline {
         }
         
         stage('Install Dependencies') {
-            parallel {
-                stage('Backend Dependencies') {
-                    steps {
-                        dir("${BACKEND_DIR}") {
-                            echo 'Installing backend dependencies...'
-                            sh 'npm ci'
-                        }
+            steps {
+                script {
+                    // Install backend dependencies with memory-efficient flags
+                    dir("${BACKEND_DIR}") {
+                        echo 'Installing backend dependencies...'
+                        sh '''
+                            npm install --prefer-offline --no-audit --progress=false
+                        '''
                     }
-                }
-                stage('Frontend Dependencies') {
-                    steps {
-                        dir("${FRONTEND_DIR}") {
-                            echo 'Installing frontend dependencies...'
-                            sh 'npm ci'
-                        }
+                    
+                    // Install frontend dependencies with memory-efficient flags
+                    dir("${FRONTEND_DIR}") {
+                        echo 'Installing frontend dependencies...'
+                        sh '''
+                            npm install --prefer-offline --no-audit --progress=false
+                        '''
                     }
                 }
             }
@@ -50,49 +51,31 @@ pipeline {
             }
         }
         
+        
         stage('Build') {
-            parallel {
-                stage('Build Backend') {
-                    steps {
-                        dir("${BACKEND_DIR}") {
-                            echo 'Building backend...'
-                            sh 'npm run build'
-                        }
+            steps {
+                script {
+                    // Build backend sequentially
+                    dir("${BACKEND_DIR}") {
+                        echo 'Building backend...'
+                        sh 'npm run build'
                     }
-                }
-                stage('Build Frontend') {
-                    steps {
-                        dir("${FRONTEND_DIR}") {
-                            echo 'Building frontend...'
-                            sh 'npm run build'
-                        }
+                    
+                    // Build frontend sequentially
+                    dir("${FRONTEND_DIR}") {
+                        echo 'Building frontend...'
+                        sh 'npm run build'
                     }
                 }
             }
         }
         
+        
         stage('Run Tests') {
-            parallel {
-                stage('Backend Tests') {
-                    steps {
-                        dir("${BACKEND_DIR}") {
-                            echo 'Running backend tests...'
-                            // Add test command when available
-                            // sh 'npm test'
-                            echo 'No tests configured yet'
-                        }
-                    }
-                }
-                stage('Frontend Tests') {
-                    steps {
-                        dir("${FRONTEND_DIR}") {
-                            echo 'Running frontend tests...'
-                            // Add test command when available
-                            // sh 'npm test'
-                            echo 'No tests configured yet'
-                        }
-                    }
-                }
+            steps {
+                echo 'Skipping tests (not configured yet)'
+                // Add test commands when available
+                // sh 'npm test'
             }
         }
         
