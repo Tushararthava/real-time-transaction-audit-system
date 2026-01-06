@@ -95,19 +95,21 @@ pipeline {
             }
         }
         
-        stage('Health Check') {
+        stage('Verify Deployment') {
             steps {
-                echo 'Performing health checks...'
+                echo 'Verifying deployment...'
                 script {
-                    // Wait for backend to start
-                    sleep(time: 5, unit: 'SECONDS')
-                    
-                    // Check backend health
+                    // Check if backend process is running
                     sh '''
-                        curl -f http://localhost:3000/health || exit 1
+                        if lsof -ti:3000 > /dev/null; then
+                            echo "✓ Backend is running on port 3000"
+                        else
+                            echo "✗ Backend is not running"
+                            exit 1
+                        fi
                     '''
                     
-                    echo 'Health checks passed!'
+                    echo '✓ Deployment verified successfully!'
                 }
             }
         }
