@@ -1,6 +1,7 @@
-# Dependencies
-node_modules/
+# Dependencies (frontend only - backend node_modules committed for deploy-only pipeline)
+fontend/node_modules/
 */node_modules/
+!backend/node_modules/
 
 # Environment variables
 .env
