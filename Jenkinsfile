@@ -49,7 +49,7 @@ pipeline {
                     
                     // Install backend production dependencies
                     dir("${BACKEND_DIR}") {
-                        sh 'npm install --production --prefer-offline --no-audit --progress=false'
+                        sh '/usr/bin/npm install --production --prefer-offline --no-audit --progress=false'
                     }
                     
                     echo '✓ Production dependencies installed'
