@@ -42,8 +42,14 @@ if errorlevel 1 (
 echo ✓ Prisma client generated
 echo.
 
+
 echo [3/4] Building frontend...
 cd ..\fontend
+
+REM Set production API URL
+echo VITE_API_BASE_URL=http://13.232.124.195/api > .env
+echo VITE_SOCKET_URL=http://13.232.124.195 >> .env
+
 call npm run build
 if errorlevel 1 (
     echo ERROR: Frontend build failed!
