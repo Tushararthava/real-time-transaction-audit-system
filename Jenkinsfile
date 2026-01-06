@@ -69,8 +69,8 @@ pipeline {
                                 export $(cat .env | grep -v '^#' | xargs)
                             fi
                             
-                            # Start Node.js server in background
-                            nohup node dist/server.js > logs/app.log 2>&1 &
+                            # Start Node.js server in background (use full path)
+                            nohup /usr/bin/node dist/server.js > logs/app.log 2>&1 &
                             echo $! > app.pid
                             
                             echo "Backend started with PID: $(cat app.pid)"
