@@ -100,36 +100,48 @@ pipeline {
             steps {
                 echo 'Deploying application...'
                 script {
-                    // Option 1: Deploy to PM2 (if running on same server)
-                    echo 'Deploying with PM2...'
+                    echo 'Deploying backend with Node.js...'
                     
-                    // Stop existing processes
+                    // Stop existing Node.js process if running
                     sh '''
-                        pm2 stop real-time-audit-backend || true
-                        pm2 delete real-time-audit-backend || true
+                        # Find and kill existing Node.js process on port 3000
+                        PID=$(lsof -ti:3000) || true
+                        if [ ! -z "$PID" ]; then
+                            echo "Stopping existing process on port 3000 (PID: $PID)"
+                            kill -9 $PID || true
+                            sleep 2
+                        fi
                     '''
                     
-                    // Start backend with PM2
+                    // Start backend with nohup
                     dir("${BACKEND_DIR}") {
                         sh '''
-                            pm2 start dist/server.js --name real-time-audit-backend \
-                                --env production \
-                                --max-memory-restart 500M \
-                                --log-date-format "YYYY-MM-DD HH:mm:ss Z"
+                            # Load environment variables if .env exists
+                            if [ -f .env ]; then
+                                export $(cat .env | grep -v '^#' | xargs)
+                            fi
+                            
+                            # Start Node.js server in background
+                            nohup node dist/server.js > logs/app.log 2>&1 &
+                            echo $! > app.pid
+                            
+                            echo "Backend started with PID: $(cat app.pid)"
+                            sleep 3
                         '''
                     }
                     
-                    // Save PM2 configuration
-                    sh 'pm2 save'
-                    
-                    // Option 2: Copy frontend build to web server
+                    // Deploy frontend
                     echo 'Deploying frontend...'
                     sh """
-                        # Copy frontend build to nginx/apache web root
-                        # Update this path based on your web server configuration
+                        # Create directory if it doesn't exist
+                        sudo mkdir -p /var/www/html/real-time-audit
+                        
+                        # Copy frontend build to web server
                         sudo rm -rf /var/www/html/real-time-audit/*
                         sudo cp -r ${FRONTEND_DIR}/dist/* /var/www/html/real-time-audit/
-                        sudo chown -R www-data:www-data /var/www/html/real-time-audit
+                        sudo chown -R www-data:www-data /var/www/html/real-time-audit || true
+                        
+                        echo "Frontend deployed successfully"
                     """
                 }
             }
@@ -163,9 +175,9 @@ pipeline {
                 echo 'Pipeline failed!'
                 // Send failure notification
                 try {
-                    sh 'pm2 logs real-time-audit-backend --lines 50 --nostream || true'
+                    sh 'tail -n 50 backend/logs/app.log || tail -n 50 backend/logs/error.log || echo "No logs available"'
                 } catch (Exception e) {
-                    echo "Could not retrieve PM2 logs: ${e.message}"
+                    echo "Could not retrieve backend logs: ${e.message}"
                 }
             }
         }
