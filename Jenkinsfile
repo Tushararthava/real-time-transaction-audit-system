@@ -2,10 +2,6 @@ pipeline {
     agent any
     
     environment {
-        // Node.js version
-        NODEJS_HOME = tool name: 'NodeJS', type: 'nodejs'
-        PATH = "${NODEJS_HOME}/bin:${env.PATH}"
-        
         // Project directories
         BACKEND_DIR = 'backend'
         FRONTEND_DIR = 'fontend'
@@ -163,9 +159,15 @@ pipeline {
             // Send notification (email, Slack, etc.)
         }
         failure {
-            echo 'Pipeline failed!'
-            // Send failure notification
-            sh 'pm2 logs real-time-audit-backend --lines 50 --nostream'
+            script {
+                echo 'Pipeline failed!'
+                // Send failure notification
+                try {
+                    sh 'pm2 logs real-time-audit-backend --lines 50 --nostream || true'
+                } catch (Exception e) {
+                    echo "Could not retrieve PM2 logs: ${e.message}"
+                }
+            }
         }
         always {
             echo 'Cleaning up...'
