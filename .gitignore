@@ -44,6 +44,13 @@ coverage/
 # Prisma
 backend/prisma/migrations/**/migration.sql
 
+# Terraform
+terraform/.terraform/
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+
 # Temporary files
 *.tmp
 temp/

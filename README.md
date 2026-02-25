@@ -1,701 +1,426 @@
-﻿# 💰 Real-Time Transaction Audit System
+﻿# 🏦 Real-Time Transaction Audit System
 
-A production-grade, real-time payment and transaction auditing system built with modern web technologies. This system implements secure money transfers, comprehensive audit trails, and real-time analytics for financial transactions.
+<div align="center">
+
+![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?style=for-the-badge&logo=node.js&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![AWS](https://img.shields.io/badge/AWS-EC2%20%7C%20S3%20%7C%20DynamoDB-FF9900?style=for-the-badge&logo=amazon-aws&logoColor=white)
+![Terraform](https://img.shields.io/badge/Terraform-1.5+-7B42BC?style=for-the-badge&logo=terraform&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Jenkins](https://img.shields.io/badge/Jenkins-CI%2FCD-D24939?style=for-the-badge&logo=jenkins&logoColor=white)
+
+**A production-grade P2P payment and transaction monitoring system with real-time WebSocket notifications, role-based audit logging, and automated cloud infrastructure provisioning.**
+
+</div>
 
 ---
 
 ## 📋 Table of Contents
 
 - [Project Overview](#-project-overview)
-- [Features](#-features)
-- [Tech Stack](#-tech-stack)
-- [Setup & Installation](#-setup--installation)
-- [API Documentation](#-api-documentation)
-- [Database Schema](#-database-schema)
-- [AI Tool Usage Log](#-ai-tool-usage-log)
-- [Project Structure](#-project-structure)
-- [Security Features](#-security-features)
+- [Architecture](#-architecture)
+- [Cloud Provider](#-cloud-provider--aws)
+- [Tools & Technologies](#-tools--technologies)
+- [Getting Started](#-getting-started)
+- [CI/CD Pipeline](#-cicd-pipeline)
+- [Infrastructure (IaC)](#-infrastructure-iac)
+- [Security](#-security)
+- [Environment Variables](#-environment-variables)
+- [API Reference](#-api-reference)
 
 ---
 
-## 🎯 Project Overview
+## 🔍 Project Overview
 
-This project is a **Real-Time Transaction Audit System** designed to handle secure financial transactions with comprehensive auditing capabilities. The system implements industry-standard security practices including:
+The **Real-Time Transaction Audit System** is a full-stack financial platform that enables peer-to-peer (P2P) money transfers with live fund tracking, and a comprehensive transaction audit trail. Every financial event is captured and made observable in real time through WebSocket connections, giving both end-users and administrators instant visibility into balance changes and transaction status.
 
-- **Double-Entry Ledger System**: Every transaction is recorded with both debit and credit entries, ensuring data integrity
-- **Blockchain-Style Audit Trail**: Immutable, hash-chained audit logs for complete transaction transparency
-- **UPI PIN Protection**: Secure 4-6 digit PIN verification for all money transfers
-- **Idempotency**: Prevents duplicate transactions using unique idempotency keys
-- **Real-Time Updates**: WebSocket-based notifications for instant transaction updates
-- **Advanced Analytics**: Comprehensive statistics with daily, weekly, and monthly breakdowns
+### Key Capabilities
 
-### Implementation Approach
-
-The system follows a **microservices-inspired architecture** with clear separation between:
-
-1. **Frontend (React + TypeScript)**: Modern, responsive UI with real-time updates
-2. **Backend (Node.js + Express)**: RESTful API with robust authentication and authorization
-3. **Database (PostgreSQL + Prisma ORM)**: Relational database with type-safe queries
-4. **Real-time Layer (Socket.IO)**: WebSocket connections for live notifications
-
-The implementation prioritizes **security**, **scalability**, and **data integrity** through:
-- Bcrypt password hashing with configurable salt rounds
-- JWT-based authentication with refresh tokens
-- Rate limiting to prevent abuse
-- Comprehensive error handling and logging
-- Transaction atomicity using database transactions
+| Feature | Description |
+|---|---|
+| 🔄 **Real-Time Notifications** | WebSocket (Socket.IO) pushes immediate balance and transaction updates to connected clients |
+| 🔒 **Secure Authentication** | JWT access + refresh token strategy with `bcrypt` password hashing |
+| 📊 **Audit Trail** | Immutable audit log service captures every transaction event with timestamps |
+| 💸 **P2P Transfers** | Atomic database transactions ensure consistent fund movement between wallets |
+| 📈 **Statistics Dashboard** | Aggregated analytics for spending, incoming, and net balance trends |
+| 🛡️ **Security Hardened** | Helmet.js security headers, rate limiting, input validation with Zod, IMDSv2-enforced EC2 |
+| 🗂️ **QR Code Payments** | QR code generation and scanning support for seamless peer transfers |
 
 ---
 
-## ✨ Features
+## 🏗️ Architecture
 
-### Core Functionality
-- 🔐 **Secure Authentication**: Email/password authentication with JWT tokens
-- 💸 **Money Transfers**: Real-time P2P transfers with UPI PIN verification
-- 📊 **Transaction History**: Complete transaction history with filtering and pagination
-- 👥 **User Search**: Find and send money to other users
-- 💰 **Balance Management**: Real-time balance updates with ledger tracking
-- 📈 **Analytics Dashboard**: Visual charts showing spending patterns and trends
-- 🔔 **Real-time Notifications**: Instant notifications for all transactions
+The system follows a **three-tier architecture** with a decoupled frontend, RESTful + WebSocket backend, and a containerised PostgreSQL database.
 
-### Security Features
-- ✅ Double-entry ledger system
-- ✅ Blockchain-style audit logging with hash chaining
-- ✅ Request idempotency to prevent duplicate transactions
-- ✅ Rate limiting on authentication and transfer endpoints
-- ✅ UPI PIN protection with attempt tracking
-- ✅ Optimistic locking to prevent race conditions
-- ✅ Comprehensive error handling and validation
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                          CLIENT LAYER (Browser)                          │
+│   React 19 + Vite   │   Zustand State   │   Socket.IO Client   │  Axios  │
+└──────────────────────────────────┬───────────────────────────────────────┘
+                                   │ HTTP REST + WebSocket (WS)
+┌──────────────────────────────────▼───────────────────────────────────────┐
+│                         APPLICATION LAYER (EC2)                          │
+│                                                                          │
+│  ┌─────────────┐   ┌─────────────────┐   ┌──────────────────────────┐   │
+│  │   Express   │   │   Socket.IO     │   │     Service Layer        │   │
+│  │   Routes    │──▶│   WebSocket     │   │  auth / transfer /       │   │
+│  │  /api/*     │   │   Server        │   │  audit / stats /token    │   │
+│  └──────┬──────┘   └────────┬────────┘   └──────────────────────────┘   │
+│         │                   │                                            │
+│  ┌──────▼───────────────────▼──────────────────────────────────────┐     │
+│  │              Middleware Stack                                    │     │
+│  │   Helmet · CORS · Rate Limiter · JWT Auth · Zod Validator       │     │
+│  └─────────────────────────────────────────────────────────────────┘     │
+└──────────────────────────────────┬───────────────────────────────────────┘
+                                   │ Prisma ORM
+┌──────────────────────────────────▼───────────────────────────────────────┐
+│                          DATA LAYER (Docker)                             │
+│        PostgreSQL 16-Alpine              │   pgAdmin 4 (UI)              │
+│        container: transaction-audit-db   │   port: 5051                  │
+└──────────────────────────────────────────────────────────────────────────┘
+```
 
-### User Experience
-- 📱 Mobile-friendly design
-- 🔍 Advanced search and filtering
-- 📊 Interactive charts and visualizations
-- 💬 Chat-based transfer interface
-- 📸 QR code scanning for quick transfers
-- 👤 Random avatar generation for users
+### Data Flow — P2P Transfer
+
+```
+User A → POST /api/transfers
+       → JWT Middleware validates token
+       → Zod validates payload
+       → Transfer Service:
+           1. BEGIN Prisma transaction
+           2. Debit Sender wallet
+           3. Credit Receiver wallet
+           4. Create Transaction record
+           5. Append Audit log entry
+           6. COMMIT
+           7. Emit transferEvents("TRANSFER_COMPLETED")
+       → Socket.IO:
+           • Emit "balance:updated"  → User A's room
+           • Emit "transaction:new"  → User B's room
+       → HTTP 201 response to User A
+```
+
+### Real-Time Event Architecture
+
+```
+Backend (EventEmitter)
+    transferEvents.emit("TRANSFER_COMPLETED", payload)
+         │
+         ▼
+    io.to(`user:${senderId}`).emit("balance:updated", ...)
+    io.to(`user:${receiverId}`).emit("transaction:new", ...)
+         │
+         ▼
+    Socket.IO   ────────────── WebSocket ──────────────▶   React Client
+    rooms per                                               Zustand store
+    user ID                                                 updates UI
+```
+
+### Backend Module Structure
+
+```
+backend/src/
+├── config/          # env, database (Prisma), logger (Winston)
+├── controllers/     # HTTP request handlers (auth, transfer, audit)
+├── middleware/      # error handler, auth guard, rate limiter, validator
+├── routes/          # Express router (auth, transfers, audit, stats)
+├── services/        # Business logic (auth, transfer, audit, stats, token)
+├── types/           # Shared TypeScript interfaces
+├── utils/           # Utility helpers
+├── validators/      # Zod schemas for request validation
+└── server.ts        # App entry-point, Socket.IO bootstrap, graceful shutdown
+```
 
 ---
 
-## 🛠️ Tech Stack
+## ☁️ Cloud Provider — AWS
 
-### Frontend
-- **React 18** - UI framework
-- **TypeScript** - Type-safe JavaScript
-- **Vite** - Build tool and dev server
-- **Recharts** - Data visualization
-- **Lucide React** - Icon library
-- **Socket.IO Client** - Real-time communication
-- **React Router** - Client-side routing
+All production infrastructure is provisioned on **Amazon Web Services (AWS)** in the `us-east-1` region using Infrastructure as Code (Terraform).
+
+### AWS Services Used
+
+| Service | Purpose |
+|---|---|
+| **EC2** (`t3.micro`) | Hosts the Node.js backend application server |
+| **VPC** | Isolated network with public subnet, route table, internet gateway |
+| **Security Group** | Restricts inbound to ports 80, 443, 3000 (app) and SSH to private CIDRs only |
+| **Elastic IP** | Static public IP address bound to the EC2 instance |
+| **S3** | Remote Terraform state storage (`real-time-audit-tfstate` bucket, encrypted at rest) |
+| **DynamoDB** | Terraform state locking table (`real-time-audit-tfstate-lock`) with PITR enabled |
+| **KMS** | Customer-managed key for EBS volume encryption and DynamoDB SSE |
+
+### AWS Network Topology
+
+```
+Internet
+    │
+    ▼
+Internet Gateway
+    │
+    ▼
+VPC — 10.0.0.0/16
+    │
+    ├── Public Subnet — 10.0.1.0/24
+    │       │
+    │       ▼
+    │   EC2 Instance (t3.micro, Amazon Linux 2023)
+    │       ├── EBS volume — gp3, 20 GB, KMS-encrypted
+    │       ├── IMDSv2 enforced (SSRF protection)
+    │       └── Detailed CloudWatch monitoring enabled
+    │
+    └── Security Group
+            ├── Ingress: 80, 443, 3000 → 0.0.0.0/0
+            └── Ingress: 22 → 10.0.0.0/8 (private only)
+```
+
+---
+
+## 🛠️ Tools & Technologies
 
 ### Backend
-- **Node.js** - Runtime environment
-- **Express.js** - Web framework
-- **TypeScript** - Type-safe JavaScript
-- **Prisma ORM** - Database toolkit
-- **PostgreSQL** - Primary database
-- **Socket.IO** - WebSocket server
-- **JWT** - Authentication tokens
-- **Bcrypt** - Password hashing
-- **Winston** - Logging
 
-### DevOps & Tools
-- **Docker & Docker Compose** - Containerization
-- **pgAdmin** - Database management
-- **Git** - Version control
-- **ESLint** - Code linting
+| Technology | Version | Purpose |
+|---|---|---|
+| **Node.js** | 20.x | JavaScript runtime |
+| **TypeScript** | 5.3 | Static typing and compile-time safety |
+| **Express.js** | 4.18 | HTTP server and REST API framework |
+| **Socket.IO** | 4.6 | Real-time bidirectional WebSocket communication |
+| **Prisma ORM** | 5.7 | Type-safe database client and migrations |
+| **PostgreSQL** | 16 | Relational database for all persistent data |
+| **Redis / ioredis** | 5.3 | Caching and session store |
+| **Winston** | 3.11 | Structured application logging |
+| **JWT (jsonwebtoken)** | 9.x | Stateless access & refresh token authentication |
+| **bcrypt** | 5.x | Secure password hashing |
+| **Zod** | 3.x | Runtime request schema validation |
+| **Helmet.js** | 7.x | HTTP security headers |
+| **express-rate-limit** | 7.x | API rate limiting and abuse prevention |
+| **UUID** | 9.x | Unique transaction and audit-log ID generation |
+| **dotenv** | 16.x | Environment variable management |
+
+### Frontend
+
+| Technology | Version | Purpose |
+|---|---|---|
+| **React** | 19 | UI component library |
+| **TypeScript** | 5.9 | Type-safe frontend code |
+| **Vite** | 7.x | Fast dev server and bundler |
+| **Tailwind CSS** | 3.4 | Utility-first CSS framework |
+| **Zustand** | 5.x | Lightweight global state management |
+| **React Router DOM** | 7.x | Client-side routing |
+| **TanStack Query** | 5.x | Server state, caching and background refetching |
+| **Axios** | 1.x | HTTP client for API communication |
+| **Socket.IO Client** | 4.8 | WebSocket client for real-time updates |
+| **React Hook Form** | 7.x | Performant form state management |
+| **Zod** | 4.x | Client-side schema validation |
+| **Recharts** | 2.x | Transaction statistics charts |
+| **qrcode.react** | 4.x | QR code generation for payments |
+| **@zxing/browser** | 0.1 | QR code scanning from camera |
+| **lucide-react** | 0.5 | Icon library |
+| **date-fns** | 4.x | Date formatting utilities |
+
+### Infrastructure & DevOps
+
+| Tool | Purpose |
+|---|---|
+| **Terraform** | Infrastructure as Code — provisions all AWS resources |
+| **Jenkins** | CI/CD pipeline automation |
+| **Docker & Docker Compose** | Containerised local PostgreSQL + pgAdmin development environment |
+| **Trivy** | Static security scanner for Terraform IaC (IaC misconfiguration detection) |
+| **AWS S3** | Encrypted remote Terraform state backend |
+| **AWS DynamoDB** | Terraform state locking to prevent concurrent apply conflicts |
+| **AWS KMS** | Encryption key management for EBS and DynamoDB |
 
 ---
 
-## 🚀 Setup & Installation
+## 🚀 Getting Started
 
 ### Prerequisites
 
-Ensure you have the following installed on your Windows machine:
+- Node.js v20+
+- Docker Desktop
+- npm v9+
 
-- **Node.js** (v18 or higher) - [Download](https://nodejs.org/)
-- **Docker Desktop** - [Download](https://www.docker.com/products/docker-desktop/)
-- **Git** - [Download](https://git-scm.com/downloads)
+### 1. Clone the Repository
 
-### Quick Start
-
-For detailed setup instructions, please refer to **[SETUP.md](https://github.com/Tushararthava/real-time-transaction-audit-system/blob/main/SETUP.md)**.
-
-**TL;DR - Quick Setup:**
-
-```powershell
-# 1. Clone and navigate to the project
-git clone <your-repository-url>
+```bash
+git clone https://github.com/your-org/real-time-transaction-audit-system.git
 cd real-time-transaction-audit-system
+```
 
-# 2. Run automated setup
-.\setup.ps1
+### 2. Start the Database
 
-# 3. Generate and update JWT secrets in backend\.env
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```bash
+docker-compose up -d
+```
 
-# 4. Start backend (in terminal 1)
+This starts:
+- **PostgreSQL 16** on port `5433`
+- **pgAdmin 4** on port `5051` (login: `admin@admin.com` / `admin123`)
+
+### 3. Configure Backend
+
+```bash
 cd backend
+cp .env.example .env   # Fill in your values
+npm install
+npm run prisma:generate
+npm run prisma:migrate
 npm run dev
+```
 
-# 5. Start frontend (in terminal 2)
+### 4. Configure Frontend
+
+```bash
 cd fontend
+npm install
 npm run dev
 ```
 
-**Live Demo:** [https://spectacular-respect-production.up.railway.app/](https://spectacular-respect-production.up.railway.app/)
-**Access the application locally:** http://localhost:5173
+### 5. One-Command Startup (Windows)
 
-**For complete setup instructions, troubleshooting, and manual installation steps, see [SETUP.md](./real-time-transaction-audit-system/SETUP.md)**
+```bash
+python startup_project.py
+```
 
 ---
 
-## 📚 API Documentation
+## 🔄 CI/CD Pipeline
 
-Base URL: `http://localhost:5000/api`
+The `Jenkinsfile` defines a 5-stage automated pipeline:
 
-### Authentication Endpoints
-
-#### POST `/auth/signup`
-Register a new user account.
-
-**Request Body:**
-```json
-{
-  "email": "user@example.com",
-  "password": "SecurePassword123!",
-  "name": "John Doe",
-  "upiPin": "123456"
-}
+```
+┌──────────────┐   ┌──────────────────┐   ┌────────────────────┐
+│  1. Checkout │──▶│ 2. Verify Build  │──▶│ 3. Security Scan   │
+│  (Git SCM)   │   │ (dist artifacts) │   │ (Trivy – Terraform)│
+└──────────────┘   └──────────────────┘   └────────┬───────────┘
+                                                    │ CRITICAL → FAIL
+                                                    ▼
+                                          ┌─────────────────────┐
+                                          │  4. Terraform Plan  │
+                                          │  (init → validate   │
+                                          │   → plan)           │
+                                          └──────────┬──────────┘
+                                                     ▼
+                                          ┌─────────────────────┐
+                                          │  5. Deploy + Verify │
+                                          │  (backend :3000 +   │
+                                          │   frontend /var/www) │
+                                          └─────────────────────┘
 ```
 
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "user": {
-      "id": "uuid",
-      "email": "user@example.com",
-      "name": "John Doe"
-    },
-    "tokens": {
-      "accessToken": "jwt-token",
-      "refreshToken": "jwt-refresh-token"
-    }
-  }
-}
-```
-
-#### POST `/auth/login`
-Authenticate and receive JWT tokens.
-
-**Request Body:**
-```json
-{
-  "email": "user@example.com",
-  "password": "SecurePassword123!"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "user": {
-      "id": "uuid",
-      "email": "user@example.com",
-      "name": "John Doe",
-      "balance": 10000
-    },
-    "tokens": {
-      "accessToken": "jwt-token",
-      "refreshToken": "jwt-refresh-token"
-    }
-  }
-}
-```
-
-#### POST `/auth/refresh`
-Refresh expired access token.
-
-**Request Body:**
-```json
-{
-  "refreshToken": "jwt-refresh-token"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "accessToken": "new-jwt-token"
-  }
-}
-```
-
-#### GET `/auth/me`
-Get current user information.
-
-**Headers:** `Authorization: Bearer <access-token>`
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "id": "uuid",
-    "email": "user@example.com",
-    "name": "John Doe",
-    "balance": 10000,
-    "createdAt": "2025-12-20T10:00:00Z"
-  }
-}
-```
-
-#### POST `/auth/logout`
-Logout and invalidate tokens.
-
-**Headers:** `Authorization: Bearer <access-token>`
-
-### Transfer Endpoints
-
-All transfer endpoints require authentication via `Authorization: Bearer <access-token>` header.
-
-#### POST `/transfer/transfer`
-Initiate a money transfer.
-
-**Request Body:**
-```json
-{
-  "receiverId": "receiver-user-id",
-  "amount": 5000,
-  "upiPin": "123456",
-  "idempotencyKey": "unique-transaction-id"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "transaction": {
-      "id": "transaction-uuid",
-      "amount": 5000,
-      "status": "COMPLETED",
-      "senderId": "sender-uuid",
-      "receiverId": "receiver-uuid",
-      "createdAt": "2025-12-20T10:00:00Z"
-    },
-    "newBalance": 5000
-  }
-}
-```
-
-#### GET `/transfer/transactions`
-Get transaction history with optional filters.
-
-**Query Parameters:**
-- `type` (optional): `DEBIT` or `CREDIT`
-- `status` (optional): `PENDING`, `COMPLETED`, or `FAILED`
-- `limit` (optional): Number of results (default: 50)
-- `offset` (optional): Pagination offset (default: 0)
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "transactions": [
-      {
-        "id": "uuid",
-        "amount": 5000,
-        "type": "DEBIT",
-        "status": "COMPLETED",
-        "receiver": {
-          "id": "uuid",
-          "name": "Jane Doe",
-          "email": "jane@example.com"
-        },
-        "createdAt": "2025-12-20T10:00:00Z"
-      }
-    ],
-    "total": 100,
-    "limit": 50,
-    "offset": 0
-  }
-}
-```
-
-#### GET `/transfer/balance`
-Get current user balance.
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "balance": 10000
-  }
-}
-```
-
-#### GET `/transfer/users/search`
-Search for users to send money to.
-
-**Query Parameters:**
-- `q`: Search query (email or name)
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "users": [
-      {
-        "id": "uuid",
-        "name": "John Doe",
-        "email": "john@example.com",
-        "avatar": "avatar-url"
-      }
-    ]
-  }
-}
-```
-
-#### GET `/transfer/payees/recent`
-Get list of recent payees.
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "payees": [
-      {
-        "id": "uuid",
-        "name": "Jane Doe",
-        "email": "jane@example.com",
-        "avatar": "avatar-url",
-        "lastTransactionDate": "2025-12-20T10:00:00Z"
-      }
-    ]
-  }
-}
-```
-
-### Statistics Endpoints
-
-All statistics endpoints require authentication.
-
-#### GET `/stats/summary`
-Get summary statistics for the current user.
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "totalSent": 50000,
-    "totalReceived": 75000,
-    "totalTransactions": 125,
-    "currentBalance": 25000
-  }
-}
-```
-
-#### GET `/stats/monthly`
-Get 6-month transaction statistics.
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "monthlyStats": [
-      {
-        "month": "2025-12",
-        "sent": 10000,
-        "received": 15000,
-        "count": 25
-      }
-    ]
-  }
-}
-```
-
-#### GET `/stats/weekly`
-Get weekly transaction statistics.
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "weeklyStats": [
-      {
-        "week": "2025-W50",
-        "sent": 5000,
-        "received": 7500,
-        "count": 10
-      }
-    ]
-  }
-}
-```
-
-#### GET `/stats/daily`
-Get daily transaction statistics for the last 30 days.
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "dailyStats": [
-      {
-        "date": "2025-12-20",
-        "sent": 1000,
-        "received": 2000,
-        "count": 5
-      }
-    ]
-  }
-}
-```
-
-### Error Responses
-
-All endpoints follow a consistent error response format:
-
-```json
-{
-  "success": false,
-  "error": {
-    "message": "Error description",
-    "code": "ERROR_CODE",
-    "details": {}
-  }
-}
-```
-
-Common HTTP status codes:
-- `200` - Success
-- `201` - Created
-- `400` - Bad Request (validation errors)
-- `401` - Unauthorized (invalid/missing token)
-- `403` - Forbidden (insufficient permissions)
-- `404` - Not Found
-- `429` - Too Many Requests (rate limit exceeded)
-- `500` - Internal Server Error
-
-### Rate Limiting
-
-- Authentication endpoints: 5 requests per 15 minutes per IP
-- Transfer endpoints: 10 requests per minute per user
-- Other endpoints: 100 requests per 15 minutes per user
+**Security Policy:**
+- **CRITICAL** Trivy findings → pipeline fails immediately
+- **HIGH** findings → printed as warnings, pipeline continues
+- All Trivy reports (`.txt` + `.json`) are archived as Jenkins build artifacts
 
 ---
 
-## 🗄️ Database Schema
+## 🏗️ Infrastructure (IaC)
 
-The system uses PostgreSQL with Prisma ORM. Below is the database schema:
+Terraform configuration lives in the `terraform/` directory.
 
-### Entity Relationship Diagram
+```bash
+cd terraform
 
-![Database Schema ER Diagram](./images/database-schema.png)
+# Initialize (with remote S3 backend)
+terraform init
 
-### Tables Description
+# Preview changes
+terraform plan -var="environment=dev"
 
-#### User
-Stores user account information and balance.
-
-| Column         | Type      | Description                                |
-|----------------|-----------|--------------------------------------------|
-| id             | UUID      | Primary key                                |
-| email          | String    | Unique user email                          |
-| name           | String    | User's display name                        |
-| password       | String    | Bcrypt hashed password                     |
-| upiPin         | String    | Hashed 4-6 digit UPI PIN                   |
-| balance        | Integer   | Current balance in cents (₹100 = 10000)   |
-| pinAttempts    | Integer   | Failed PIN attempt counter                 |
-| isLocked       | Boolean   | Account lock status                        |
-| createdAt      | DateTime  | Account creation timestamp                 |
-| updatedAt      | DateTime  | Last update timestamp                      |
-
-**Indexes:** `email (unique)`, `userId`
-
-#### Transaction
-Stores all financial transactions.
-
-| Column          | Type              | Description                          |
-|-----------------|-------------------|--------------------------------------|
-| id              | UUID              | Primary key                          |
-| amount          | Integer           | Amount in cents                      |
-| type            | TransactionType   | DEBIT or CREDIT                      |
-| status          | TransactionStatus | PENDING, COMPLETED, or FAILED        |
-| senderId        | UUID              | Foreign key to User (sender)         |
-| receiverId      | UUID              | Foreign key to User (receiver)       |
-| idempotencyKey  | String            | Unique key to prevent duplicates     |
-| createdAt       | DateTime          | Transaction creation time            |
-| updatedAt       | DateTime          | Last update time                     |
-
-**Indexes:** `senderId + createdAt`, `receiverId + createdAt`, `idempotencyKey (unique)`
-
-#### LedgerEntry
-Double-entry bookkeeping for all transactions.
-
-| Column         | Type       | Description                               |
-|----------------|------------|-------------------------------------------|
-| id             | UUID       | Primary key                               |
-| transactionId  | UUID       | Foreign key to Transaction                |
-| userId         | UUID       | Foreign key to User                       |
-| type           | LedgerType | DEBIT or CREDIT                           |
-| amount         | Integer    | Amount in cents                           |
-| balanceBefore  | Integer    | Balance before transaction                |
-| balanceAfter   | Integer    | Balance after transaction                 |
-| createdAt      | DateTime   | Entry creation time                       |
-
-**Indexes:** `userId + createdAt`, `transactionId`
-
-#### AuditLog
-Immutable audit trail with hash chaining (blockchain-inspired).
-
-| Column    | Type     | Description                                    |
-|-----------|----------|------------------------------------------------|
-| id        | UUID     | Primary key                                    |
-| eventType | String   | Event type (TRANSFER, LOGIN, SIGNUP, etc.)     |
-| userId    | UUID     | Foreign key to User                            |
-| metadata  | JSON     | Event-specific data                            |
-| prevHash  | String   | Hash of previous audit entry (chain)           |
-| hash      | String   | SHA-256 hash of this entry                     |
-| createdAt | DateTime | Event timestamp                                |
-
-**Indexes:** `createdAt`, `eventType`, `hash (unique)`
-
-#### IdempotentRequest
-Prevents duplicate requests using idempotency keys.
-
-| Column         | Type     | Description                          |
-|----------------|----------|--------------------------------------|
-| id             | UUID     | Primary key                          |
-| idempotencyKey | String   | Unique request identifier            |
-| requestHash    | String   | Hash of request body                 |
-| response       | JSON     | Cached response                      |
-| createdAt      | DateTime | Request creation time                |
-| expiresAt      | DateTime | Expiration time for auto-cleanup     |
-
-**Indexes:** `idempotencyKey (unique)`, `expiresAt`
-
-### Database Migrations
-
-To run database migrations:
-
-```powershell
-cd backend
-npx prisma migrate dev --name init
+# Apply
+terraform apply -var="environment=dev"
 ```
 
-To view your database in a GUI:
+**Remote State:**
+- State file stored in S3 (`real-time-audit-tfstate`) with server-side encryption
+- State locking via DynamoDB table (`real-time-audit-tfstate-lock`)
 
-```powershell
-npx prisma studio
+---
+
+## 🔐 Security
+
+| Measure | Implementation |
+|---|---|
+| **Secrets** | Environment variables via `.env`; never committed to git |
+| **Password hashing** | `bcrypt` with salt rounds |
+| **Token auth** | Short-lived JWT access tokens + refresh token rotation |
+| **HTTP security headers** | `helmet.js` on all routes |
+| **Rate limiting** | `express-rate-limit` prevents brute-force |
+| **Input validation** | `Zod` schemas on all API endpoints |
+| **EC2 IMDSv2** | Instance Metadata Service v2 enforced (blocks SSRF) |
+| **EBS encryption** | KMS customer-managed key on root volume |
+| **SSH restriction** | Port 22 locked to private CIDR `10.0.0.0/8` only |
+| **IaC scanning** | Trivy v0.49 scans Terraform on every CI run |
+| **State encryption** | Terraform state encrypted in S3 (`encrypt = true`) |
+
+---
+
+## 🌍 Environment Variables
+
+### Backend (`backend/.env`)
+
+```env
+NODE_ENV=development
+PORT=3000
+DATABASE_URL=postgresql://postgres:postgres123@localhost:5433/transaction_audit
+FRONTEND_URL=http://localhost:5173
+
+JWT_ACCESS_SECRET=your-access-secret
+JWT_REFRESH_SECRET=your-refresh-secret
+JWT_ACCESS_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
+
+REDIS_URL=redis://localhost:6379
 ```
 
-Or use pgAdmin at http://localhost:5051
+### Docker (`/.env.docker`)
+
+```env
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres123
+POSTGRES_DB=transaction_audit
+POSTGRES_PORT=5433
+PGADMIN_EMAIL=admin@admin.com
+PGADMIN_PASSWORD=admin123
+PGADMIN_PORT=5051
+```
 
 ---
 
-## 🤖 AI Tool Usage Log
+## 📡 API Reference
 
-This project was developed with extensive assistance from multiple **AI-powered development tools** including **Google Gemini AI** (Gemini 2.0 Flash Experimental), **Claude AI**, and **GitHub Copilot** to accelerate development and improve code quality.
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `POST` | `/api/auth/register` | ❌ | Register a new user |
+| `POST` | `/api/auth/login` | ❌ | Login and receive tokens |
+| `POST` | `/api/auth/refresh` | ❌ | Refresh access token |
+| `POST` | `/api/auth/logout` | ✅ | Revoke refresh token |
+| `GET` | `/api/auth/me` | ✅ | Get current user profile |
+| `POST` | `/api/transfers` | ✅ | Initiate a P2P transfer |
+| `GET` | `/api/transfers` | ✅ | List user's transactions |
+| `GET` | `/api/transfers/:id` | ✅ | Get single transaction |
+| `GET` | `/api/audit` | ✅ | Retrieve audit log entries |
+| `GET` | `/api/stats` | ✅ | Get spending/income statistics |
 
-### AI-Assisted Tasks
+### WebSocket Events
 
-| Task Category              | Specific Tasks                                                                                                      | Impact Level |
-|----------------------------|---------------------------------------------------------------------------------------------------------------------|--------------|
-| **Transaction Logic**      | • Wrote atomic transaction handling with Prisma transactions<br>• Implemented balance verification and updates<br>• Created ledger entry creation logic | Critical |
-| **Type Safety**            | • Fixed TypeScript type errors across backend and frontend<br>• Created TypeScript interfaces and types for API contracts<br>• Resolved Prisma type compatibility issues | Medium |
-| **Validation**             | • Created Zod schemas for all API request validation<br>• Implemented UPI PIN format validation<br>• Added email and password strength validation | Medium |
-| **Testing & Debugging**    | • Debugged hash-related errors in UPI PIN verification<br>• Fixed implicit 'any' type errors in TypeScript<br>• Resolved database connection and migration issues | High |
-| **Code Refactoring**       | • Refactored service layer to separate business logic<br>• Improved error messages and response formats<br>• Optimized database queries with selective field fetching | Medium |
-| **Security Implementation**| • Generated rate limiting configurations<br>• Implemented CORS policies<br>• Added input sanitization and validation | High |
-| **Documentation**          | • Created API documentation with request/response examples<br>• Generated database schema diagrams<br>• Wrote setup instructions for Windows environment | Medium |
-| **DevOps Setup**           | • Created Docker Compose configuration<br>• Generated automated setup scripts (PowerShell and Batch)<br>• Configured environment variable templates | Medium |
-
-### Specific AI Tool Contributions
-
-**GitHub Copilot:**
-- **Prisma ORM Setup**: Schema design, migrations, and database connection configuration
-- **UPI PIN Protection**: Implemented PIN hashing, validation, and attempt tracking mechanisms
-- **Transaction Security**: Secure transaction handling with atomic operations and balance verification
-
-**Google Gemini AI:**
-- Complex architectural decisions and system design
-- Comprehensive API documentation generation
-- Advanced debugging and error resolution
-
-**Claude AI:**
-- Detailed technical explanations and documentation
-- Security implementation guidance
-
-### Effectiveness Score: **4/5**
-
-#### Justification:
-
-**Strengths:**
-- ✅ **Massive Time Savings**: Saved approximately **15-20 hours** on boilerplate code, schema design, and API endpoint creation
-- ✅ **Reduced Errors**: AI-generated validation schemas and TypeScript types caught potential bugs early
-- ✅ **Best Practices**: AI tools suggested industry-standard patterns for authentication, ledger systems, and audit logging
-- ✅ **Quick Prototyping**: Rapidly generated UI components and layouts, allowing focus on business logic
-- ✅ **Documentation**: Automatically generated comprehensive API docs and setup guides
-- ✅ **Problem Solving**: Excellent at debugging complex TypeScript type errors and Prisma query issues
-- ✅ **Multiple Perspectives**: Using Gemini, Claude, and Copilot provided diverse approaches to problem-solving
-
-**Areas for Improvement:**
-- ⚠️ **Context Limitations**: Sometimes needed multiple iterations to get complex logic right (e.g., double-entry ledger)
-- ⚠️ **Debugging AI Code**: Spent ~2-3 hours debugging AI-generated bcrypt hashing issues in UPI PIN verification
-- ⚠️ **Over-Engineering**: Initial suggestions were sometimes too complex; needed simplification for MVP
-- ⚠️ **Consistency**: Required manual review to ensure consistent code style across different AI tool outputs
+| Event | Direction | Payload |
+|---|---|---|
+| `balance:updated` | Server → Client | `{ newBalance, timestamp }` |
+| `transaction:new` | Server → Client | `{ transaction, newBalance, timestamp }` |
+| `ping` | Client → Server | — |
+| `pong` | Server → Client | — |
 
 ---
 
-## 🔒 Security Features
+## 📄 License
 
-### Authentication & Authorization
-- **JWT-based authentication** with access and refresh tokens
-- **Secure password hashing** using bcrypt with configurable salt rounds
-- **UPI PIN protection** with attempt tracking and account locking
-- **Token expiration** (15 minutes for access, 7 days for refresh)
-
-### Transaction Security
-- **Idempotency keys** to prevent duplicate transactions
-- **Optimistic locking** to prevent race conditions
-- **Atomic database transactions** ensuring data consistency
-- **Balance verification** before every transfer
-- **Double-entry ledger** for accounting integrity
-
-### Audit & Compliance
-- **Immutable audit logs** with blockchain-style hash chaining
-- **Complete transaction history** with timestamps
-- **Event logging** for all critical operations
-- **Request logging** with Winston
-
-### Rate Limiting
-- Authentication endpoints: 5 requests per 15 minutes
-- Transfer endpoints: 10 requests per minute
-- General endpoints: 100 requests per 15 minutes
-
-### Data Protection
-- **Environment variable validation** on startup
-- **Input sanitization** and validation using Zod
-- **CORS configuration** restricting frontend origins
-- **SQL injection prevention** via Prisma ORM parameterized queries
+This project is licensed under the **ISC License**.
 
 ---
 
-**Made using React, Node.js, and PostgreSQL**
+<div align="center">
+  <sub>Built with ❤️ using Node.js, React, Terraform, and AWS</sub>
+</div>
