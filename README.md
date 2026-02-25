@@ -1,19 +1,4 @@
-﻿# 🏦 Real-Time Transaction Audit System
-
-<div align="center">
-
-![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?style=for-the-badge&logo=node.js&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)
-![AWS](https://img.shields.io/badge/AWS-EC2%20%7C%20S3%20%7C%20DynamoDB-FF9900?style=for-the-badge&logo=amazon-aws&logoColor=white)
-![Terraform](https://img.shields.io/badge/Terraform-1.5+-7B42BC?style=for-the-badge&logo=terraform&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
-![Jenkins](https://img.shields.io/badge/Jenkins-CI%2FCD-D24939?style=for-the-badge&logo=jenkins&logoColor=white)
-
-**A production-grade P2P payment and transaction monitoring system with real-time WebSocket notifications, role-based audit logging, and automated cloud infrastructure provisioning.**
-
-</div>
-
+﻿#  Real-Time Transaction Audit System
 ---
 
 ## 📋 Table of Contents
@@ -413,14 +398,4 @@ PGADMIN_PORT=5051
 | `ping` | Client → Server | — |
 | `pong` | Server → Client | — |
 
----
 
-## 📄 License
-
-This project is licensed under the **ISC License**.
-
----
-
-<div align="center">
-  <sub>Built with ❤️ using Node.js, React, Terraform, and AWS</sub>
-</div>
